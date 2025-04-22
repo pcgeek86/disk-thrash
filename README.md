@@ -22,8 +22,8 @@ cargo install --git https://github.com/pcgeek86/disk-thrash.git
 
 ## Usage
 
-To build and run the application, you need to have Rust installed.
+After installing the application, run it with:
 
-```bash
-cargo build --release
-./target/release/disk-thrash
+```
+disk-thrash
+```
