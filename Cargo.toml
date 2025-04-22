@@ -2,6 +2,9 @@
 name = "disk-thrash"
 version = "0.1.0"
 edition = "2024"
+authors = ["Trevor Sullivan <trevor@trevorsullivan.net>"]
+license = "MIT"
+description = "A tool to create arbitrary disk I/O load."
 
 [dependencies]
 num_cpus = "1.16.0"
