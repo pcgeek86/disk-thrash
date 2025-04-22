@@ -1,0 +1,9 @@
+[package]
+name = "disk-thrash"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+num_cpus = "1.16.0"
+rand = "0.9.1"
+uuid = { version = "1.16.0", features = ["v4"] }
