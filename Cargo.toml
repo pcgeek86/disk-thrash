@@ -1,12 +1,13 @@
 [package]
 name = "disk-thrash"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 authors = ["Trevor Sullivan <trevor@trevorsullivan.net>"]
 license = "MIT"
 description = "A tool to create arbitrary disk I/O load."
 
 [dependencies]
+clap = { version = "4.5.37", features = ["derive"] }
 num_cpus = "1.16.0"
 rand = "0.9.1"
 uuid = { version = "1.16.0", features = ["v4"] }

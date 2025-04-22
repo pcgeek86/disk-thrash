@@ -27,3 +27,9 @@ After installing the application, run it with:
 ```
 disk-thrash
 ```
+
+To specify a parent directory for the temporary files:
+
+```
+disk-thrash --parent-dir /path/to/parent/directory
+```
