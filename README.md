@@ -1,16 +1,6 @@
 # disk-thrash
 
-A simple Rust application.
-
-## Description
-
-This application is a simple Rust program that utilizes multiple CPU cores to perform some task.
-
-## Dependencies
-
-- num_cpus = "1.16.0"
-- rand = "0.9.1"
-- uuid = { version = "1.16.0", features = ["v4"] }
+A simple disk stress test tool. It continuously creates and deletes files on the filesystem.
 
 ## Installation
 
@@ -32,4 +22,11 @@ To specify a parent directory for the temporary files:
 
 ```
 disk-thrash --parent-dir /path/to/parent/directory
+```
+
+The default buffer size is 100 MB
+To specify a different buffer size for the temporary files:
+
+```
+disk-thrash --buffer-size 200
 ```
