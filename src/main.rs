@@ -7,6 +7,10 @@ use rand::RngCore;
 use num_cpus;
 use clap::Parser;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
+use std::collections::HashSet;
+use lazy_static::lazy_static;
 
 /// Disk thrashing tool
 #[derive(Parser, Debug)]
@@ -20,11 +24,14 @@ struct Args {
 
 }
 
+// Shared set to keep track of created files
+lazy_static! {
+    static ref CREATED_FILES: Mutex<HashSet<PathBuf>> = Mutex::new(HashSet::new());
+}
+
 fn disk_thrash(parent_dir: &PathBuf, buffer: &[u8]) -> std::io::Result<()> {
     // Generate GUID for filename
     let filename = parent_dir.join(format!("{}.tmp", Uuid::new_v4()));
-
-    
 
     // Write to disk
     {
@@ -33,14 +40,23 @@ fn disk_thrash(parent_dir: &PathBuf, buffer: &[u8]) -> std::io::Result<()> {
         file.flush()?;
     }
 
-    // Delete the file
-    std::fs::remove_file(&filename)?;
+    // Add the filename to the set of created files
+    CREATED_FILES.lock().unwrap().insert(filename);
 
     Ok(())
 }
 
+static STOP_SIGNAL: AtomicBool = AtomicBool::new(false);
+
 fn main() {
     let args = Args::parse();
+
+    // Set up the signal handler for CTRL+C
+    ctrlc::set_handler(|| {
+        println!("CTRL+C received. Signaling threads to stop...");
+        STOP_SIGNAL.store(true, Ordering::SeqCst);
+    }).expect("Error setting Ctrl-C handler");
+
 
     // Provision 100 MB byte array (only once)
     let size = args.buffer_size * 1024 * 1024; // 100 MB in bytes
@@ -65,17 +81,34 @@ fn main() {
         let buffer_clone = Arc::clone(&shared_buffer);
         let handle = thread::spawn(move || {
             println!("Thread {} started", i);
-            loop {
+            while !STOP_SIGNAL.load(Ordering::SeqCst) {
                 if let Err(e) = disk_thrash(&parent_dir, &buffer_clone) {
                     eprintln!("Thread {} error: {}", i, e);
                 }
             }
+            println!("Thread {} stopping", i);
         });
         handles.push(handle);
     }
 
-    // Wait for all threads to complete (they won't, since they loop infinitely)
+    // Wait for all threads to complete (they won't, since they loop infinitely until signal)
     for handle in handles {
         handle.join().unwrap();
     }
+
+    // Clean up created files after threads have stopped
+    println!("Threads stopped. Cleaning up temporary files...");
+    let files_to_delete = {
+        let mut created_files = CREATED_FILES.lock().unwrap();
+        created_files.drain().collect::<Vec<_>>()
+    };
+
+    for file_path in files_to_delete {
+        if let Err(e) = std::fs::remove_file(&file_path) {
+            eprintln!("Error deleting file {}: {}", file_path.display(), e);
+        } else {
+            println!("Deleted {}", file_path.display());
+        }
+    }
+    println!("Cleanup complete. Exiting.");
 }
