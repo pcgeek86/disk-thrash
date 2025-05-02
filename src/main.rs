@@ -33,6 +33,9 @@ fn disk_thrash(parent_dir: &PathBuf, buffer: &[u8]) -> std::io::Result<()> {
     // Generate GUID for filename
     let filename = parent_dir.join(format!("{}.tmp", Uuid::new_v4()));
 
+    // Add the filename to the set of created files, for cleanup at CTRL + C
+    CREATED_FILES.lock().unwrap().insert(filename.clone());
+
     // Write to disk
     {
         let mut file = File::create(&filename)?;
@@ -40,8 +43,21 @@ fn disk_thrash(parent_dir: &PathBuf, buffer: &[u8]) -> std::io::Result<()> {
         file.flush()?;
     }
 
-    // Add the filename to the set of created files
-    CREATED_FILES.lock().unwrap().insert(filename);
+    // Delete the file
+    _ = std::fs::remove_file(&filename);
+    
+    {
+        let filename_lock = CREATED_FILES.lock().unwrap();
+        let value = filename_lock.iter().find(|i| *i == &filename);
+        match value {
+            Some(item) => {
+                CREATED_FILES.lock().unwrap().remove(item);
+            }
+            None => {
+                println!("File not found in set");
+            }
+        }
+    }
 
     Ok(())
 }
